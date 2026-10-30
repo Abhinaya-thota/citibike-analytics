@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: dim_stations
+    description: One row per Citi Bike station, reconstructed from trip endpoints.
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: station_name
+        data_tests: [not_null]
+      - name: borough
+        data_tests: [not_null]
+      - name: latitude
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 40.4, max_value: 41.0}
+      - name: longitude
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: -74.3, max_value: -73.6}
+
+  - name: dim_date
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+      - name: day_of_week
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 1, max_value: 7}
+
+  - name: dim_time
+    columns:
+      - name: hour_of_day
+        data_tests: [unique, not_null]
+      - name: day_part
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['overnight', 'am_peak', 'midday', 'pm_peak', 'evening']}
+
+  - name: dim_weather
+    columns:
+      - name: weather_date
+        data_tests:
+          - unique
+          - not_null
+      - name: precip_category
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['dry', 'light', 'moderate', 'heavy', 'unknown']}
+
+  - name: fct_trips
+    description: One row per trip. Incremental, partitioned by source_month.
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: start_station_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_stations'), field: station_id}
+      - name: end_station_id
+        data_tests:
+          - relationships:
+              arguments: {to: ref('dim_stations'), field: station_id}
+      - name: start_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_day}
+      - name: start_hour
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_time'), field: hour_of_day}
+      - name: distance_km
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 0, max_value: 60}
+      - name: rider_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['member', 'casual']}
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "ended_at > started_at"
+
+  - name: fct_station_hourly
+    description: Station x hour departures/arrivals, zero-filled across each station's active period.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [station_id, hour_ts]
+      - expression_is_true:
+          arguments:
+            expression: "departures >= member_departures + casual_departures"
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_stations'), field: station_id}
+      - name: departures
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 0}
+      - name: arrivals
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 0}

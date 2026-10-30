@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: citibike
+    description: Raw Citi Bike trip files, landed as one Parquet file per month by ingestion/citibike.py. Every column is VARCHAR.
+    tables:
+      - name: trips
+        config:
+          external_location: "read_parquet('{{ env_var('CITIBIKE_RAW_DIR', '../data/raw') }}/trips/trips_*.parquet', union_by_name = true)"
+        loaded_at_field: _ingested_at
+        freshness:
+          warn_after: {count: 40, period: day}
+          error_after: {count: 70, period: day}
+        columns:
+          - name: ride_id
+          - name: _source_month
+            description: YYYY-MM of the published file this row came from.
+            data_tests: [not_null]
+
+  - name: noaa
+    description: NOAA GHCN-Daily summaries for Central Park (USW00094728), landed by ingestion/weather.py.
+    tables:
+      - name: weather_daily
+        config:
+          external_location: "read_parquet('{{ env_var('CITIBIKE_RAW_DIR', '../data/raw') }}/weather/weather_daily.parquet')"
+        columns:
+          - name: date
+            data_tests: [not_null, unique]

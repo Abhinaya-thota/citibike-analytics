@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: audit_trip_rejections
+    description: Rows rejected by each staging data-quality rule, per source month.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source_month, outcome]
+    columns:
+      - name: pct_of_month
+        data_tests:
+          # Alert if any single rule suddenly drops >2% of a month: likely an upstream format change.
+          - accepted_range:
+              arguments: {min_value: 0, max_value: 2}
+              config:
+                where: "outcome <> 'accepted'"
+                severity: warn

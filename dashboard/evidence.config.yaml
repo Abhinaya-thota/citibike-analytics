@@ -1,0 +1,12 @@
+deployment:
+  basePath: /citibike-analytics   # served from GitHub Pages at <user>.github.io/citibike-analytics
+
+appearance:
+  default: system
+  switcher: true
+
+plugins:
+  components:
+    "@evidence-dev/core-components": {}
+  datasources:
+    "@evidence-dev/duckdb": {}

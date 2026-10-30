@@ -1,0 +1,31 @@
+version: 2
+
+exposures:
+  - name: citibike_dashboard
+    label: Citi Bike Evidence dashboard
+    type: dashboard
+    maturity: medium
+    url: https://github.com/Abhinaya-thota/citibike-analytics/tree/main/dashboard
+    description: Evidence.dev site answering the project's business questions; rebuilt by the monthly-refresh workflow.
+    depends_on:
+      - ref('fct_trips')
+      - ref('fct_station_hourly')
+      - ref('dim_stations')
+      - ref('dim_date')
+      - ref('dim_time')
+      - ref('dim_weather')
+    owner:
+      name: Project owner
+
+  - name: demand_forecast
+    label: Day-ahead station demand model
+    type: ml
+    maturity: low
+    description: LightGBM model trained on forecasting/features.sql; writes forecast.test_predictions.
+    depends_on:
+      - ref('fct_station_hourly')
+      - ref('dim_stations')
+      - ref('dim_date')
+      - ref('dim_weather')
+    owner:
+      name: Project owner

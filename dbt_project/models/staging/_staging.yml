@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: stg_citibike__trips
+    description: Typed, cleaned, de-duplicated trips. Excludes rows with a dq_issue (see audit_trip_rejections).
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: rider_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments: {values: ['member', 'casual']}
+      - name: rideable_type
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['classic_bike', 'electric_bike', 'docked_bike']}
+      - name: started_at
+        data_tests: [not_null]
+      - name: duration_seconds
+        data_tests:
+          - not_null
+          - accepted_range:
+              arguments: {min_value: 1, max_value: 86400}
+      - name: source_month
+        data_tests: [not_null]
+
+  - name: stg_noaa__weather_daily
+    description: Daily weather at Central Park, in inches / °F / mph.
+    columns:
+      - name: weather_date
+        data_tests: [unique, not_null]
+      - name: precip_in
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: 0, max_value: 15}
+      - name: temp_max_f
+        data_tests:
+          - accepted_range:
+              arguments: {min_value: -30, max_value: 115}
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "temp_max_f >= temp_min_f"

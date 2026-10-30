@@ -1,0 +1,115 @@
+# Monthly: pull any newly published Citi Bike month, rebuild the warehouse,
+# retrain the forecast and redeploy the dashboard to GitHub Pages.
+#
+# The raw Parquet lake persists between runs as assets on a GitHub Release
+# ("raw-data"), so each run only downloads new months from Citi Bike.
+name: Monthly refresh
+
+on:
+  schedule:
+    - cron: "17 14 6 * *"   # 6th of each month; Citi Bike usually publishes in the first few days
+  workflow_dispatch:
+    inputs:
+      months:
+        description: Number of most recent months to keep
+        default: "12"
+
+permissions:
+  contents: write   # upload release assets
+  pages: write
+  id-token: write
+
+concurrency:
+  group: monthly-refresh
+  cancel-in-progress: false
+
+env:
+  MONTHS: ${{ inputs.months || '12' }}
+  DUCKDB_MEMORY_LIMIT: 10GB
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restore raw lake from release
+        run: |
+          gh release view raw-data >/dev/null 2>&1 || \
+            gh release create raw-data --title "Raw data lake" --notes "Monthly Parquet files written by ingestion/. Managed by the monthly-refresh workflow."
+          mkdir -p data/raw/trips
+          gh release download raw-data --pattern 'trips_*.parquet' --dir data/raw/trips || echo "no trip files yet"
+
+      - name: Ingest new months + weather
+        run: python -m ingestion.run --latest "$MONTHS" --prune --manifest new_files.json
+
+      - name: Upload new files to release
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          for f in json.load(open("new_files.json")):
+              if "/trips/" in f:
+                  subprocess.run(["gh", "release", "upload", "raw-data", f, "--clobber"], check=True)
+                  print("uploaded", f)
+          PY
+
+      - name: dbt build
+        working-directory: dbt_project
+        run: |
+          mkdir -p ../data/warehouse
+          dbt build --profiles-dir . --threads 2
+
+      - name: Source freshness
+        working-directory: dbt_project
+        run: dbt source freshness --profiles-dir .
+
+      - name: Benchmark + forecast
+        run: |
+          python analysis/06_explain_analyze.py
+          python forecasting/train.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: |
+          npm ci
+          npm run sources
+          npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/build/citibike-analytics
+
+      - name: Commit refreshed results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analysis/06_explain_analyze_results.md forecasting/results.md forecasting/artifacts/metrics.json forecasting/artifacts/feature_importance.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: monthly refresh $(date -u +%Y-%m)"
+            git push
+          fi
+
+  deploy:
+    needs: refresh
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
