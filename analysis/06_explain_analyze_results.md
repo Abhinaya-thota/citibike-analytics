@@ -4,11 +4,11 @@ Query: hourly departures on 2026-07-15 over 45,372,846 trips. Median of 5 warm r
 
 | variant | median ms | row groups that must be read | answer (trips) |
 |---|---:|---:|---:|
-| A. load order, range predicate | 6.0 | 56 / 379 | 161,306 |
-| B. sorted, strftime() predicate | 829.0 | 370 / 370 | 161,306 |
+| A. load order, range predicate | 6.3 | 57 / 373 | 161,306 |
+| B. sorted, strftime() predicate | 1112.5 | 370 / 370 | 161,306 |
 | C. sorted, range predicate | 2.4 | 2 / 370 | 161,306 |
 
-**Result.** The predicate matters most: wrapping `started_at` in `strftime()` defeats zone maps and forces a full scan, 344x slower than the sargable range on the same table. Sorting then cuts the row groups read from 56 to 2 (2.5x faster here). The gain from sorting is modest at this size because Citi Bike's raw files are already roughly time-ordered; it matters more on cold storage, where each skipped row group is a skipped read. Both are why `fct_trips` ends with `order by started_at` and the dashboard queries filter on raw timestamps.
+**Result.** The predicate matters most: wrapping `started_at` in `strftime()` defeats zone maps and forces a full scan, 464x slower than the sargable range on the same table. Sorting then cuts the row groups read from 57 to 2 (2.6x faster here). The gain from sorting is modest at this size because Citi Bike's raw files are already roughly time-ordered; it matters more on cold storage, where each skipped row group is a skipped read. Both are why `fct_trips` ends with `order by started_at` and the dashboard queries filter on raw timestamps.
 
 Row groups that must be read = row groups whose `started_at` min/max zone map overlaps
 the day (from `pragma_storage_info`). Everything else is skipped without being read.
@@ -24,7 +24,7 @@ the day (from `pragma_storage_info`). Everything else is skipped without being r
 explain analyze          select hour(started_at) as hr, count(*) as departures         from bench.trips_load_order         where started_at >= timestamp '2026-07-15' and started_at < timestamp '2026-07-15' + interval 1 day         group by hr order by hr
 ┌────────────────────────────────────────────────┐
 │┌──────────────────────────────────────────────┐│
-││              Total Time: 0.0070s             ││
+││              Total Time: 0.0069s             ││
 │└──────────────────────────────────────────────┘│
 └────────────────────────────────────────────────┘
 ┌───────────────────────────┐
@@ -130,7 +130,7 @@ explain analyze          select hour(started_at) as hr, count(*) as departures  
 explain analyze          select hour(started_at) as hr, count(*) as departures         from wh.marts.fct_trips         where strftime(started_at, '%Y-%m-%d') = '2026-07-15'         group by hr order by hr
 ┌────────────────────────────────────────────────┐
 │┌──────────────────────────────────────────────┐│
-││              Total Time: 0.783s              ││
+││               Total Time: 1.11s              ││
 │└──────────────────────────────────────────────┘│
 └────────────────────────────────────────────────┘
 ┌───────────────────────────┐
@@ -216,7 +216,7 @@ explain analyze          select hour(started_at) as hr, count(*) as departures  
 │  %m-%d') = '2026-07-15')  │
 │                           │
 │        161,306 rows       │
-│          (3.12s)          │
+│          (4.41s)          │
 └───────────────────────────┘
 ```
 
@@ -231,7 +231,7 @@ explain analyze          select hour(started_at) as hr, count(*) as departures  
 explain analyze          select hour(started_at) as hr, count(*) as departures         from wh.marts.fct_trips         where started_at >= timestamp '2026-07-15' and started_at < timestamp '2026-07-15' + interval 1 day         group by hr order by hr
 ┌────────────────────────────────────────────────┐
 │┌──────────────────────────────────────────────┐│
-││              Total Time: 0.0029s             ││
+││              Total Time: 0.0023s             ││
 │└──────────────────────────────────────────────┘│
 └────────────────────────────────────────────────┘
 ┌───────────────────────────┐
