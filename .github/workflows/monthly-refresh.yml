@@ -92,7 +92,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dashboard/build/citibike-analytics
+          path: dashboard/build
 
       - name: Commit refreshed results
         run: |

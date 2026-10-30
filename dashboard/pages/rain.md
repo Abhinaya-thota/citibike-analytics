@@ -34,7 +34,7 @@ same day type and season** so that winter doesn't masquerade as a rain effect.
     <Column id=change_vs_dry title="vs. dry" fmt=pct0 contentType=delta />
 </DataTable>
 
-Bands: light < 0.1 in, moderate 0.1–0.5 in, heavy ≥ 0.5 in.
+Bands: light is under 0.1 in, moderate 0.1–0.5 in, heavy 0.5 in or more.
 
 <ScatterPlot
     data={daily}

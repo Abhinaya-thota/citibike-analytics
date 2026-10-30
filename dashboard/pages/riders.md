@@ -2,7 +2,7 @@
 title: Members vs. casual riders
 ---
 
-```sql profile
+```sql segment_profile
 select * from citibike.rider_profile
 ```
 
@@ -14,7 +14,7 @@ select * from citibike.hourly_profile
 select * from citibike.monthly_by_segment
 ```
 
-<DataTable data={profile}>
+<DataTable data={segment_profile}>
     <Column id=rider_type title="Rider" />
     <Column id=trips fmt=num0 />
     <Column id=median_minutes title="Median minutes" fmt=num1 />
