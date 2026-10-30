@@ -1,0 +1,17 @@
+# Data lives in the Parquet lake / DuckDB file, never in git.
+data/
+forecasting/artifacts/model.txt
+
+__pycache__/
+*.pyc
+.venv/
+
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+dbt_project/.user.yml
+
+dashboard/node_modules/
+dashboard/.evidence/
+dashboard/build/
+dashboard/sources/**/*.parquet

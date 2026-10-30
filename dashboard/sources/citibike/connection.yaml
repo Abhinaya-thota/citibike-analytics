@@ -1,0 +1,5 @@
+# Path is relative to this directory.
+name: citibike
+type: duckdb
+options:
+  filename: ../../../data/warehouse/citibike.duckdb

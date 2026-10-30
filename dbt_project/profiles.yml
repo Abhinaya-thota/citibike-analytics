@@ -1,0 +1,11 @@
+citibike:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../data/warehouse/citibike.duckdb') }}"
+      threads: 4
+      settings:
+        preserve_insertion_order: false   # lets DuckDB stream big CTAS without buffering order
+        memory_limit: "{{ env_var('DUCKDB_MEMORY_LIMIT', '8GB') }}"
+        max_temp_directory_size: "{{ env_var('DUCKDB_MAX_TEMP', '15GB') }}"

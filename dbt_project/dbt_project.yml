@@ -1,0 +1,32 @@
+name: citibike
+version: "1.0.0"
+config-version: 2
+profile: citibike
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+analysis-paths: ["../analysis"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+# The raw Parquet lake written by ../ingestion is located via the
+# CITIBIKE_RAW_DIR env var (default ../data/raw, relative to this directory).
+
+models:
+  citibike:
+    staging:
+      +materialized: view   # stg_citibike__trips overrides to incremental
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+      audit:
+        +schema: audit

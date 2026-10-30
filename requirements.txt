@@ -1,0 +1,11 @@
+# DuckDB is pinned to the 1.4 LTS line because the Evidence dashboard's DuckDB
+# driver (@duckdb/node-api 1.4.x) can't open files written by DuckDB 2.x.
+duckdb==1.4.4
+dbt-core==1.12.6
+dbt-duckdb==1.11.1
+requests==2.34.2
+pandas==3.0.5
+pyarrow==26.0.0
+shapely==2.2.0
+lightgbm==4.7.0
+numpy==2.5.3

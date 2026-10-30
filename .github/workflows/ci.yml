@@ -1,0 +1,54 @@
+# On every push / PR: unit tests, then a full dbt build + test on a small,
+# reproducible sample of the latest month. Proves the pipeline end to end in
+# ~5 minutes without downloading a year of data.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DUCKDB_MEMORY_LIMIT: 8GB
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Unit tests (ingestion)
+        run: python -m unittest discover -s ingestion/tests -t . -v
+
+      - name: Ingest a 200k-row sample of the latest month
+        run: python -m ingestion.run --latest 1 --sample-rows 200000 --weather-optional
+
+      - name: dbt build (models + tests)
+        working-directory: dbt_project
+        run: |
+          mkdir -p ../data/warehouse
+          dbt build --profiles-dir . --vars '{min_trips_per_month: 100000}'
+
+      - name: Compile showcase SQL
+        working-directory: dbt_project
+        run: dbt compile --profiles-dir . --select "resource_type:analysis"
+
+      - name: Run showcase SQL
+        run: python analysis/run.py
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: dbt-logs
+          path: dbt_project/logs/

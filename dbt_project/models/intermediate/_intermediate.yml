@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: int_stations__locations
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: latitude
+        data_tests: [not_null]
+
+  - name: int_stations__boroughs
+    config:
+      raw_dir: "{{ env_var('CITIBIKE_RAW_DIR', '../data/raw') }}"
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: borough
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island', 'New Jersey', 'Unknown']
+
+  - name: int_us_holidays
+    columns:
+      - name: observed_date
+        data_tests: [unique, not_null]
+
+  - name: int_station_hourly__flows
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [station_id, hour_ts]
