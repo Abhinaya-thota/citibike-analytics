@@ -5,7 +5,7 @@ automated monthly ingestion pipeline, a tested dbt star schema on DuckDB,
 showcase SQL, an Evidence.dev dashboard, and a LightGBM day-ahead demand
 forecast built on features computed in the warehouse.
 
-**12 months · 45.4M trips · 2,628 stations · 76 dbt tests · refreshed monthly by GitHub Actions**
+**[Live dashboard](https://abhinaya-thota.github.io/citibike-analytics/) · 12 months · 45.4M trips · 2,628 stations · 76 dbt tests · refreshed monthly by GitHub Actions**
 
 ## Architecture
 
@@ -122,8 +122,8 @@ Oct 2025 – Sep 2026. Each one links to the query behind it.
 3. **Rebalancing is a commuter problem.** On an average workday, 9 Ave & W 33 St (Hudson Yards / Penn Station) takes in about 104 more bikes than it sends out between 7 and 10am, and loses about 104 between 4 and 8pm. The flow runs the same direction on 98% of workdays. Seven of the ten most imbalanced stations in the morning are also in the evening top ten, with the sign flipped: the same commuters ride in and back out. ([05](analysis/05_rush_hour_imbalance.sql), [dashboard](dashboard/pages/rebalancing.md))
 4. **Leisure loops are around Central Park.** The top round-trip stations are Central Park S & 6 Ave and 7 Ave & Central Park South, with about 15k round trips each, ~90% of them by casual riders, and median rides near 40 minutes. ([04](analysis/04_round_trips_and_commutes.sql))
 5. **The system has real shutdown days.** Feb 23 2026 recorded **zero** trips city-wide, and Jan 25–26 ran at 12–13% of typical volume. The empty-station analysis excludes these hours so a city-wide shutdown isn't counted as empty docks. What's left are two patterns: multi-day closures (e.g. E 65 St & 2 Ave, Oct 22–29 2025, with no trips in or out) and stations that send out nothing all day while bikes keep arriving (e.g. 10 Ave & W 14 St on Oct 22 2025: 0 departures, 24 arrivals). ([02](analysis/02_empty_station_gaps_and_islands.sql))
-6. **Forecasting beats the planner's baseline by about 21%.** On a held-out September, LightGBM has an MAE of 4.30 trips per station-hour, versus 5.42 for "same hour last week" (WAPE 36.0% vs 45.3%). ([results](forecasting/results.md))
-7. **The rain effect** is computed on the [rain page](dashboard/pages/rain.md) once NOAA weather is loaded (see *Status* below).
+6. **Forecasting beats the planner's baseline by 27%.** On a held-out September, LightGBM has an MAE of 3.96 trips per station-hour, versus 5.42 for "same hour last week" (WAPE 33.1% vs 45.3%). Adding weather features improved it from 21% to 27%. ([results](forecasting/results.md))
+7. **The rain effect**, compared against dry days of the same day type and season, is on the [live dashboard](https://abhinaya-thota.github.io/citibike-analytics/rain).
 
 ## Performance: one documented optimization
 
@@ -163,7 +163,6 @@ For a quick run: `python -m ingestion.run --latest 1 --sample-rows 200000`, then
 
 ## Status / known limitations
 
-- **Weather has not been loaded in the published results yet.** The NOAA API (`www.ncei.noaa.gov`) was unreachable from the environment where this was first built. The code is complete and unit-tested against NCEI's CSV format. The first GitHub Actions run will fetch it, and that fills in `dim_weather`, the rain page and the forecast's weather features. Until then, `--weather-optional` lets the pipeline build with an empty, correctly typed weather table.
 - **Trips are anonymous**, so "retention" here means segment-level seasonality rather than per-rider cohorts.
 - **There is no dock-level inventory.** "Empty station" is inferred from zero departures where several would normally happen, while arrivals continue.
 - **The forecast uses actual weather** as a stand-in for a day-ahead weather forecast, which slightly flatters it compared with production.
