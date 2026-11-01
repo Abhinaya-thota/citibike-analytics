@@ -15,7 +15,7 @@ exposures:
       - ref('dim_time')
       - ref('dim_weather')
     owner:
-      name: Project owner
+      name: Abhinaya Thota
 
   - name: demand_forecast
     label: Day-ahead station demand model
@@ -28,4 +28,4 @@ exposures:
       - ref('dim_date')
       - ref('dim_weather')
     owner:
-      name: Project owner
+      name: Abhinaya Thota

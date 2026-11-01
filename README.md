@@ -132,11 +132,11 @@ Oct 2025 – Sep 2026. Each one links to the query behind it.
 
 | variant | median ms | row groups read |
 |---|---:|---:|
-| table in load order, range predicate | 5.5 | 56 / 379 |
-| sorted, `strftime(started_at) = ...` | ~820 | 370 / 370 |
-| **sorted, `started_at >= ... and < ...`** | **~3** | **2 / 370** |
+| table in load order, range predicate | 6.3 | 57 / 373 |
+| sorted, `strftime(started_at) = ...` | 1,112 | 370 / 370 |
+| **sorted, `started_at >= ... and < ...`** | **2.4** | **2 / 370** |
 
-Wrapping the column in a function defeats DuckDB's min/max zone maps and costs about 250x. Sorting `fct_trips` by `started_at` then cuts the row groups read from 56 to 2.
+Wrapping the column in a function defeats DuckDB's min/max zone maps and makes the query several hundred times slower. Sorting `fct_trips` by `started_at` then cuts the row groups read from 57 to 2. Numbers are from the latest GitHub Actions run; the monthly refresh regenerates the results file.
 
 ## Running it
 
