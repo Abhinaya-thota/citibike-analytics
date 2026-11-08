@@ -12,14 +12,14 @@
       "2026-10-01 00:00:00",
       "2026-10-31 23:00:00"
     ],
-    "best_iteration": 1602,
+    "best_iteration": 1997,
     "weather_features_used": true
   },
   "metrics": {
     "lightgbm": {
-      "mae": 3.5061088561011,
-      "rmse": 5.458816268154342,
-      "wape_pct": 30.048429040816444
+      "mae": 3.5115826894909388,
+      "rmse": 5.469547540897025,
+      "wape_pct": 30.09534147307296
     },
     "seasonal_naive_lag_168h": {
       "mae": 4.748418838219327,
